@@ -40,50 +40,44 @@ unidad_transporte = st.selectbox("Unidad de Transporte", [
     "PLATAFORMA", "TRAYLER", "VOLCO", "FURGON REFRIGERADO"
 ])
 
-# Botón de descarga y ver recomendaciones
+# Botón para descargar plantilla
 col1, col2 = st.columns([1, 1])
 with col1:
     with open("Plantilla Tarifario.xlsx", "rb") as plantilla_file:
         st.download_button("📥 Descargar plantilla admitida", plantilla_file, file_name="Plantilla Tarifario.xlsx")
 
 with col2:
-    mostrar_info = st.toggle("📋 Ver antes de subir")
+    if st.button("ℹ️ Ver antes de subir"):
+        st.session_state["ver_info"] = True
 
-# Si se activa el toggle, se muestra el contenido emergente
-if mostrar_info:
-    st.markdown("""
-    <div style='background-color:#fff3cd; padding: 15px; border-radius: 5px; border: 1px solid #ffeeba; margin-top:10px;'>
-      <strong>⚠️ Antes de subir:</strong><br>
-      - Verificar la plantilla admitida antes de subir el archivo<br>
-      - Ingresar el <strong>origen</strong> y el <strong>destino</strong> en sus respectivas columnas:
-    </div>
-    """, unsafe_allow_html=True)
+# Mostrar recomendaciones si se presionó el botón
+if "ver_info" in st.session_state and st.session_state["ver_info"]:
+    with st.expander("Recomendaciones antes de subir", expanded=True):
+        st.markdown("""
+        <div style='background-color:#fff3cd; padding: 15px; border-radius: 5px; border: 1px solid #ffeeba'>
+        <strong>⚠️ Antes de subir:</strong><br>
+        - Verificar la plantilla admitida antes de subir el archivo<br>
+        - Ingresar el <strong>origen</strong> y el <strong>destino</strong> en las celdas <strong>B3</strong> y <strong>C3</strong> respectivamente:
+        </div>
+        """, unsafe_allow_html=True)
 
-    # Imagen informativa
-    st.markdown("""
-    <div style='text-align: center; margin-top: 10px;'>
-      <img src='data:image/png;base64,{}' style='width: 25%; border: 1px solid #ccc; border-radius: 4px;'><br>
-      <small>Ejemplo correcto de encabezados en la plantilla</small>
-    </div>
-    """.format(base64.b64encode(open("info.jpg", "rb").read()).decode()), unsafe_allow_html=True)
+        st.markdown("""
+        <div style='text-align: center; margin-top: 10px;'>
+        <img src='data:image/png;base64,{}' style='width: 30%; border: 1px solid #ccc; border-radius: 4px;'><br>
+        <small>Ejemplo correcto de encabezados en la plantilla</small>
+        </div>
+        """.format(
+            base64.b64encode(open("info.jpg", "rb").read()).decode()
+        ), unsafe_allow_html=True)
 
-    # Aviso tipo de archivo
-    st.markdown("""
-    <div style='background-color:#fff3cd; padding: 10px; border-radius: 5px; border: 1px solid #ffeeba; margin-top:10px;'>
-    - Solo subir archivos de Excel <code>.xlsx</code>
-    </div>
-    """, unsafe_allow_html=True)
+        st.markdown("""
+        <div style='background-color:#fff3cd; padding: 10px; border-radius: 5px; border: 1px solid #ffeeba; margin-top:10px;'>
+        - Solo subir archivos de Excel <code>.xlsx</code>
+        </div>
+        """, unsafe_allow_html=True)
 
 # Carga de archivo
 archivo = st.file_uploader("Sube tu archivo Excel tarifario", type=["xlsx"])
-
-if archivo is not None:
-    try:
-        df_preview = pd.read_excel(archivo)
-        st.subheader("📄 Vista previa del archivo")
-        st.dataframe(df_preview.head())
-    except Exception as e:
-        st.error(f"Error al leer el archivo: {e}")
 
 # Botón de ejecución
 if st.button("Ejecutar Tarificador"):
@@ -93,16 +87,18 @@ if st.button("Ejecutar Tarificador"):
         st.error("Formato inválido. Solo se permiten archivos con extensión .xlsx.")
     else:
         try:
-            df = pd.read_excel(archivo)
-            columnas = [col.strip().lower() for col in df.columns]
+            df = pd.read_excel(archivo, header=None)
+            b3 = str(df.iloc[2, 1]).strip().lower()
+            c3 = str(df.iloc[2, 2]).strip().lower()
 
-            if "origen" not in columnas or "destino" not in columnas:
-                faltantes = []
-                if "origen" not in columnas:
-                    faltantes.append("Origen")
-                if "destino" not in columnas:
-                    faltantes.append("Destino")
-                st.error(f"❌ El archivo no contiene las columnas requeridas: {', '.join(faltantes)}.")
+            errores = []
+            if b3 != "origen":
+                errores.append("celda B3 debe decir 'origen'")
+            if c3 != "destino":
+                errores.append("celda C3 debe decir 'destino'")
+
+            if errores:
+                st.error("❌ Errores en la plantilla:\n- " + "\n- ".join(errores))
             else:
                 with tempfile.NamedTemporaryFile(delete=False, suffix=".xlsx") as tmp:
                     archivo.seek(0)
@@ -113,7 +109,6 @@ if st.button("Ejecutar Tarificador"):
                     resultados = ejecutar_tarificador(tipo_vehiculo, tipo_carga, unidad_transporte, tmp_path, maestros)
 
                 st.success("✅ Tarifas calculadas correctamente.")
-
                 with open(tmp_path, "rb") as f:
                     st.download_button("⬇️ Descargar tarifario modificado", f.read(), file_name="Tarifario_Modificado.xlsx")
 
@@ -121,4 +116,3 @@ if st.button("Ejecutar Tarificador"):
 
         except Exception as e:
             st.error(f"❌ Error durante el procesamiento: {e}")
-
