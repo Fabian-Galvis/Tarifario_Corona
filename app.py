@@ -21,11 +21,11 @@ maestros = {
 }
 
 t_carga = {
-    "General": "12",
-    "Granel sólido": "5",
-    "Granel líquido": "1003",
-    "Contenedor": "13",
-    "Carga refrigerada": "2"
+    "General": 12,
+    "Granel sólido": 5,
+    "Granel líquido": 1003,
+    "Contenedor": 13,
+    "Carga refrigerada": 2
 }
 
 # Formulario
