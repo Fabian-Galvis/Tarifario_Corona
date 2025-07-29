@@ -27,7 +27,7 @@ def leer_tarifario(hoja_tarifario):
             datos.append((fila, origen, destino))  # Guardar también el número de fila
     return datos
 
-def buscar_en_maestro(hoja_maestro, datos, tipo_carga, unidad_transporte):
+def buscar_en_maestro(hoja_maestro, datos, tipo_carga, unidad_transporte, horas_logisticas):
     resultados = []
     for fila_tarifario, origen_tarifario, destino_tarifario in datos:
         ot_norm = normalize_text(origen_tarifario).replace("-", " ")
@@ -62,7 +62,7 @@ def buscar_en_maestro(hoja_maestro, datos, tipo_carga, unidad_transporte):
             if origen_match and destino_match:
                 valor_base = hoja_maestro[f'N{fila}'].value or 0
                 adicional = hoja_maestro[f'O{fila}'].value or 0
-                valor_total = valor_base * (n_periferias if n_periferias > 0 else 1) + (adicional * 8)
+                valor_total = valor_base * (n_periferias if n_periferias > 0 else 1) + (adicional * horas_logisticas)
 
                 resultados.append((fila_tarifario, valor_total))
                 encontrado = True
@@ -73,7 +73,7 @@ def buscar_en_maestro(hoja_maestro, datos, tipo_carga, unidad_transporte):
 
     return resultados
 
-def ejecutar_tarificador(tipo_vehiculo, tipo_carga, unidad_transporte, archivo_tarifario, maestros):
+def ejecutar_tarificador(tipo_vehiculo, tipo_carga, unidad_transporte, archivo_tarifario, maestros, horas_logisticas):
     ruta_maestro = maestros.get(tipo_vehiculo)
     if not ruta_maestro or not os.path.exists(ruta_maestro):
         raise ValueError("Tipo de vehículo no válido o archivo no encontrado.")
@@ -84,7 +84,7 @@ def ejecutar_tarificador(tipo_vehiculo, tipo_carga, unidad_transporte, archivo_t
     hoja_maestro = libro_maestro.active
 
     datos_tarifario = leer_tarifario(hoja_tarifario)
-    resultados = buscar_en_maestro(hoja_maestro, datos_tarifario, tipo_carga, unidad_transporte)
+    resultados = buscar_en_maestro(hoja_maestro, datos_tarifario, tipo_carga, unidad_transporte, horas_logisticas)
 
     for fila, tarifa in resultados:
         hoja_tarifario[f'E{fila}'] = tarifa
