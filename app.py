@@ -40,43 +40,44 @@ unidad_transporte = st.selectbox("Unidad de Transporte", [
     "PLATAFORMA", "TRAYLER", "VOLCO", "FURGON REFRIGERADO"
 ])
 
-# Botón para descargar plantilla
-with open("Plantilla Tarifario.xlsx", "rb") as plantilla_file:
-    st.download_button("📥 Descargar plantilla admitida", plantilla_file, file_name="Plantilla Tarifario.xlsx")
+# Botón de descarga y ver recomendaciones
+col1, col2 = st.columns([1, 1])
+with col1:
+    with open("Plantilla Tarifario.xlsx", "rb") as plantilla_file:
+        st.download_button("📥 Descargar plantilla admitida", plantilla_file, file_name="Plantilla Tarifario.xlsx")
 
-# Recomendaciones antes de subir el archivo
-st.markdown("""
-<div style='background-color:#fff3cd; padding: 15px; border-radius: 5px; border: 1px solid #ffeeba'>
-  <strong>⚠️ Antes de subir:</strong><br>
-  - Verificar la plantilla admitida antes de subir el archivo<br>
-  - Ingresar el <strong>origen</strong> y el <strong>destino</strong> en sus respectivas columnas:
-</div>
-""", unsafe_allow_html=True)
+with col2:
+    mostrar_info = st.toggle("📋 Ver antes de subir")
 
-# Imagen pequeña centrada con pie de imagen
-st.markdown("""
-<div style='text-align: center; margin-top: 10px;'>
-  <img src='data:image/png;base64,{}' style='width: 40%; border: 1px solid #ccc; border-radius: 4px;'><br>
-  <small>Ejemplo correcto de encabezados en la plantilla</small>
-</div>
-""".format(
-    # codifica imagen a base64 para insertarla con HTML
-    base64.b64encode(open("info.jpg", "rb").read()).decode()
-), unsafe_allow_html=True)
+# Si se activa el toggle, se muestra el contenido emergente
+if mostrar_info:
+    st.markdown("""
+    <div style='background-color:#fff3cd; padding: 15px; border-radius: 5px; border: 1px solid #ffeeba; margin-top:10px;'>
+      <strong>⚠️ Antes de subir:</strong><br>
+      - Verificar la plantilla admitida antes de subir el archivo<br>
+      - Ingresar el <strong>origen</strong> y el <strong>destino</strong> en sus respectivas columnas:
+    </div>
+    """, unsafe_allow_html=True)
 
-# Recomendación adicional
-st.markdown("""
-<div style='background-color:#fff3cd; padding: 10px; border-radius: 5px; border: 1px solid #ffeeba; margin-top:10px;'>
-- Solo subir archivos de Excel <code>.xlsx</code>
-</div>
-""", unsafe_allow_html=True)
+    # Imagen informativa
+    st.markdown("""
+    <div style='text-align: center; margin-top: 10px;'>
+      <img src='data:image/png;base64,{}' style='width: 25%; border: 1px solid #ccc; border-radius: 4px;'><br>
+      <small>Ejemplo correcto de encabezados en la plantilla</small>
+    </div>
+    """.format(base64.b64encode(open("info.jpg", "rb").read()).decode()), unsafe_allow_html=True)
 
+    # Aviso tipo de archivo
+    st.markdown("""
+    <div style='background-color:#fff3cd; padding: 10px; border-radius: 5px; border: 1px solid #ffeeba; margin-top:10px;'>
+    - Solo subir archivos de Excel <code>.xlsx</code>
+    </div>
+    """, unsafe_allow_html=True)
 
 # Carga de archivo
 archivo = st.file_uploader("Sube tu archivo Excel tarifario", type=["xlsx"])
 
 if archivo is not None:
-    # Mostrar vista previa
     try:
         df_preview = pd.read_excel(archivo)
         st.subheader("📄 Vista previa del archivo")
@@ -120,3 +121,4 @@ if st.button("Ejecutar Tarificador"):
 
         except Exception as e:
             st.error(f"❌ Error durante el procesamiento: {e}")
+
