@@ -32,7 +32,7 @@ t_carga = {
 
 # Selectores
 tipo_vehiculo = st.selectbox("Tipo de Vehículo", list(maestros.keys()))
-horas_logisticas = st.number_input("Horas logísticas", min_value=0, max_value=32, step=1)
+horas_logisticas = st.number_input("Horas logísticas", min_value=4, max_value=32, step=1)
 nombre_carga = st.selectbox("Tipo de Carga", list(t_carga.keys()))
 tipo_carga = t_carga[nombre_carga]
 
