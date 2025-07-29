@@ -20,8 +20,8 @@ def extraer_periferias(texto):
 
 def leer_tarifario(hoja_tarifario):
     datos = []
-    for fila in hoja_tarifario.iter_rows(min_row=11, max_row=hoja_tarifario.max_row, values_only=True):
-        origen, destino = fila[3], fila[4]
+    for fila in hoja_tarifario.iter_rows(min_row=4, max_row=hoja_tarifario.max_row, values_only=True):
+        origen, destino = fila[2], fila[3]
         if origen and destino:
             datos.append((origen, destino))
     return datos
@@ -38,7 +38,7 @@ def buscar_en_maestro(hoja_maestro, datos, tipo_carga, unidad_transporte):
 
         encontrado = False
 
-        for fila in range(11, hoja_maestro.max_row + 1):
+        for fila in range(2, hoja_maestro.max_row + 1):
             mes = hoja_maestro[f'H{fila}'].value
             tipo = normalize_text(hoja_maestro[f'K{fila}'].value)
 
@@ -85,12 +85,12 @@ def ejecutar_tarificador(tipo_vehiculo, tipo_carga, unidad_transporte, archivo_t
     datos_tarifario = leer_tarifario(hoja_tarifario)
     resultados = buscar_en_maestro(hoja_maestro, datos_tarifario, tipo_carga, unidad_transporte)
 
-    hoja_tarifario["L8"] = f"Tarifa SICETAC para tipo vehículo {tipo_vehiculo}"
+    hoja_tarifario["B2"] = f"Tarifa para vehículo {tipo_vehiculo}"
 
-    for i, (_, _, _, tarifa) in enumerate(resultados, start=11):
+    for i, (_, _, _, tarifa) in enumerate(resultados, start=4):
         if i > 80:
             break
-        hoja_tarifario[f'L{i}'] = tarifa
+        hoja_tarifario[f'D{i}'] = tarifa
 
     libro_tarifario.save(archivo_tarifario)
     return resultados
