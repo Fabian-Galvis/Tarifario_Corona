@@ -30,7 +30,8 @@ t_carga = {
 
 # Formulario
 tipo_vehiculo = st.selectbox("Tipo de Vehículo", list(maestros.keys()))
-tipo_carga = st.selectbox("Tipo de Carga", list(t_carga.keys()))
+valor_carga = st.selectbox("Tipo de Carga", list(t_carga.keys()))
+tipo_carga = t_carga[valor_carga]
 unidad_transporte = st.selectbox("Unidad de Transporte", [
     "ESTACAS", "ESTIBAS", "TANQUE", "FURGON", "PORTACONTENEDORES", "PLATAFORMA", "TRAYLER", "VOLCO", "FURGON REFRIGERADO"
 ])
