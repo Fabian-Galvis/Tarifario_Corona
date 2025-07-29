@@ -32,6 +32,7 @@ t_carga = {
 
 # Selectores
 tipo_vehiculo = st.selectbox("Tipo de Vehículo", list(maestros.keys()))
+horas_logisticas = st.number_input("Horas logísticas", min_value=0, max_value=32, step=1)
 nombre_carga = st.selectbox("Tipo de Carga", list(t_carga.keys()))
 tipo_carga = t_carga[nombre_carga]
 
@@ -104,7 +105,7 @@ if st.button("Ejecutar Tarificador"):
                     tmp_path = tmp.name
 
                 with st.spinner("⏳ Generando tarifas, por favor espera..."):
-                    resultados = ejecutar_tarificador(tipo_vehiculo, tipo_carga, unidad_transporte, tmp_path, maestros)
+                    resultados = ejecutar_tarificador(tipo_vehiculo, tipo_carga, unidad_transporte, tmp_path, maestros, horas_logisticas)
 
                 st.success("✅ Tarifas calculadas correctamente.")
                 with open(tmp_path, "rb") as f:
