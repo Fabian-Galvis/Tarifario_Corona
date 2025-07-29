@@ -99,8 +99,8 @@ def ejecutar_tarificador(tipo_vehiculo, tipo_carga, unidad_transporte, archivo_t
     datos_tarifario = leer_tarifario(hoja_tarifario)
     resultados = buscar_en_maestro(hoja_maestro, datos_tarifario, tipo_carga, unidad_transporte, horas_logisticas)
 
-    hoja_tarifario['B2'] = f"Tarifas calculadas para el tipo de vehículo: {tipo_vehiculo}"
-    hoja_tarifario['E2'] = f"Horas logísticas: {horas_logisticas}"
+    hoja_tarifario['B2'] = f"VEHICULO: {tipo_vehiculo}"
+    hoja_tarifario['E2'] = f"HORAS LOGISTICAS: {horas_logisticas}"
 
     for fila, tarifa in resultados:
         hoja_tarifario[f'E{fila}'] = tarifa
