@@ -50,7 +50,7 @@ with col1:
 with col2:
     mostrar_info = st.toggle("📋 Ver antes de subir")
 
-# Si se activa el toggle, se muestra el contenido emergente
+
 if mostrar_info:
     st.markdown("""
     <div style='background-color:#fff3cd; padding: 15px; border-radius: 5px; border: 1px solid #ffeeba; margin-top:10px;'>
@@ -60,7 +60,7 @@ if mostrar_info:
     </div>
     """, unsafe_allow_html=True)
 
-    # Imagen informativa
+   
     st.markdown("""
     <div style='text-align: center; margin-top: 10px;'>
       <img src='data:image/png;base64,{}' style='width: 25%; border: 1px solid #ccc; border-radius: 4px;'><br>
