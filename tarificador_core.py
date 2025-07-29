@@ -87,7 +87,7 @@ def ejecutar_tarificador(tipo_vehiculo, tipo_carga, unidad_transporte, archivo_t
     resultados = buscar_en_maestro(hoja_maestro, datos_tarifario, tipo_carga, unidad_transporte)
 
     for fila, tarifa in resultados:
-        hoja_tarifario[f'D{fila}'] = tarifa
+        hoja_tarifario[f'E{fila}'] = tarifa
 
     libro_tarifario.save(archivo_tarifario)
     return resultados
