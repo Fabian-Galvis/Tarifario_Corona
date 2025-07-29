@@ -20,15 +20,16 @@ def extraer_periferias(texto):
 
 def leer_tarifario(hoja_tarifario):
     datos = []
-    for fila in hoja_tarifario.iter_rows(min_row=4, max_row=hoja_tarifario.max_row, values_only=True):
-        origen, destino = fila[2], fila[3]
+    for fila in range(4, hoja_tarifario.max_row + 1):  # Desde la fila 3
+        origen = hoja_tarifario[f'B{fila}'].value
+        destino = hoja_tarifario[f'C{fila}'].value
         if origen and destino:
-            datos.append((origen, destino))
+            datos.append((fila, origen, destino))  # Guardar también el número de fila
     return datos
 
 def buscar_en_maestro(hoja_maestro, datos, tipo_carga, unidad_transporte):
     resultados = []
-    for origen_tarifario, destino_tarifario in datos:
+    for fila_tarifario, origen_tarifario, destino_tarifario in datos:
         ot_norm = normalize_text(origen_tarifario).replace("-", " ")
         dt_norm = normalize_text(destino_tarifario)
 
@@ -63,12 +64,12 @@ def buscar_en_maestro(hoja_maestro, datos, tipo_carga, unidad_transporte):
                 adicional = hoja_maestro[f'O{fila}'].value or 0
                 valor_total = valor_base * (n_periferias if n_periferias > 0 else 1) + (adicional * 8)
 
-                resultados.append((fila, origen_tarifario, destino_tarifario, valor_total))
+                resultados.append((fila_tarifario, valor_total))
                 encontrado = True
                 break
 
         if not encontrado:
-            resultados.append((None, origen_tarifario, destino_tarifario, "No encontrado"))
+            resultados.append((fila_tarifario, "No encontrado"))
 
     return resultados
 
@@ -78,19 +79,15 @@ def ejecutar_tarificador(tipo_vehiculo, tipo_carga, unidad_transporte, archivo_t
         raise ValueError("Tipo de vehículo no válido o archivo no encontrado.")
 
     libro_tarifario = openpyxl.load_workbook(archivo_tarifario)
-    hoja_tarifario = libro_tarifario['Tarifario']
+    hoja_tarifario = libro_tarifario.active
     libro_maestro = openpyxl.load_workbook(ruta_maestro)
     hoja_maestro = libro_maestro.active
 
     datos_tarifario = leer_tarifario(hoja_tarifario)
     resultados = buscar_en_maestro(hoja_maestro, datos_tarifario, tipo_carga, unidad_transporte)
 
-    hoja_tarifario["B2"] = f"Tarifa para vehículo {tipo_vehiculo}"
-
-    for i, (_, _, _, tarifa) in enumerate(resultados, start=4):
-        if i > 80:
-            break
-        hoja_tarifario[f'D{i}'] = tarifa
+    for fila, tarifa in resultados:
+        hoja_tarifario[f'D{fila}'] = tarifa
 
     libro_tarifario.save(archivo_tarifario)
     return resultados
