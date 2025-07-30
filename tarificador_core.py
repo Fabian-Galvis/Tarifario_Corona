@@ -20,7 +20,7 @@ def extraer_periferias(texto):
 
 def leer_tarifario(hoja_tarifario):
     datos = []
-    for fila in range(4, hoja_tarifario.max_row + 1):  # Desde fila 4
+    for fila in range(4, hoja_tarifario.max_row + 1):
         origen = hoja_tarifario[f'B{fila}'].value
         destino = hoja_tarifario[f'C{fila}'].value
         if origen and destino:
@@ -28,30 +28,20 @@ def leer_tarifario(hoja_tarifario):
     return datos
 
 def obtener_candidatos(hoja_ubicaciones, texto):
-    departamentos = [
-        "amazonas", "antioquia", "arauca", "atlántico", "bogotá", "bolívar", "boyacá", "caldas",
-        "caquetá", "casanare", "cauca", "cesar", "chocó", "córdoba", "cundinamarca", "guainía",
-        "guaviare", "huila", "la guajira", "magdalena", "meta", "nariño", "norte de santander",
-        "putumayo", "quindío", "risaralda", "santander", "sucre", "tolima", "valle del cauca",
-        "vaupés", "vichada"
-    ]
     texto_norm = normalize_text(texto)
     candidatos = []
-
     for fila in range(2, hoja_ubicaciones.max_row + 1):
-        depto = normalize_text(hoja_ubicaciones[f'B{fila}'].value)
-        municipio = normalize_text(hoja_ubicaciones[f'D{fila}'].value)
+        cod_dep = str(hoja_ubicaciones[f'A{fila}'].value).strip()
+        nom_dep = normalize_text(hoja_ubicaciones[f'B{fila}'].value)
+        cod_mun = str(hoja_ubicaciones[f'C{fila}'].value).strip()
+        nom_mun = normalize_text(hoja_ubicaciones[f'D{fila}'].value)
 
-        if any(depto in texto_norm for depto in departamentos):
-            if depto in texto_norm:
-                candidatos.append((fila, hoja_ubicaciones[f'C{fila}'].value + '000', hoja_ubicaciones[f'B{fila}'].value, hoja_ubicaciones[f'D{fila}'].value))
-        elif municipio in texto_norm:
-            candidatos.append((fila, hoja_ubicaciones[f'C{fila}'].value + '000', hoja_ubicaciones[f'B{fila}'].value, hoja_ubicaciones[f'D{fila}'].value))
+        if nom_dep in texto_norm or nom_mun in texto_norm:
+            candidatos.append((fila, cod_mun + '000', hoja_ubicaciones[f'B{fila}'].value, hoja_ubicaciones[f'D{fila}'].value))
 
     return candidatos
 
 def buscar_en_maestro_con_ubicaciones(hoja_maestro, hoja_ubicaciones, datos, tipo_carga, unidad_transporte, horas_logisticas, hoja_tarifario):
-    resultados = []
 
     try:
         tipo_carga = int(tipo_carga)
@@ -61,9 +51,9 @@ def buscar_en_maestro_con_ubicaciones(hoja_maestro, hoja_ubicaciones, datos, tip
     try:
         horas_logisticas = int(horas_logisticas)
     except ValueError:
-        raise ValueError("Las horas logísticas deben ser un número.")
+        raise ValueError("Tipo de carga y horas logísticas deben ser números.")
 
-    offset = 0  # Para controlar filas insertadas
+    offset = 0
     for fila_tarifario, origen_tarifario, destino_tarifario in datos:
         fila_tarifario += offset
         n_periferias = extraer_periferias(destino_tarifario)
@@ -76,9 +66,12 @@ def buscar_en_maestro_con_ubicaciones(hoja_maestro, hoja_ubicaciones, datos, tip
             hoja_tarifario[f'E{fila_tarifario}'] = "No encontrado"
             continue
 
-        primeras_iteraciones = True
+        total_iteraciones = len(origenes) * len(destinos)
+        iteracion = 0
+
         for cod_ori, cod_ori_str, dep_ori, mun_ori in origenes:
             for cod_dest, cod_dest_str, dep_dest, mun_dest in destinos:
+                iteracion += 1
                 encontrado = False
                 for fila in range(2, hoja_maestro.max_row + 1):
                     mes = hoja_maestro[f'H{fila}'].value
@@ -98,22 +91,23 @@ def buscar_en_maestro_con_ubicaciones(hoja_maestro, hoja_ubicaciones, datos, tip
                             + (adicional * horas_logisticas)
                         )
 
-                        # Si no es la primera coincidencia, insertar nueva fila
-                        if not primeras_iteraciones:
+                        if total_iteraciones == 1:
+                            hoja_tarifario[f'B{fila_tarifario}'] = f"{origen_tarifario} ({dep_ori})"
+                            hoja_tarifario[f'C{fila_tarifario}'] = f"{destino_tarifario} ({dep_dest})"
+                            hoja_tarifario[f'E{fila_tarifario}'] = valor_total
+                        else:
                             hoja_tarifario.insert_rows(fila_tarifario + 1)
-                            hoja_tarifario[f'B{fila_tarifario + 1}'] = origen_tarifario
+                            hoja_tarifario[f'B{fila_tarifario + 1}'] = f"{origen_tarifario} ({dep_ori})"
                             hoja_tarifario[f'C{fila_tarifario + 1}'] = f"{destino_tarifario} ({dep_dest})"
                             hoja_tarifario[f'E{fila_tarifario + 1}'] = valor_total
                             offset += 1
-                        else:
-                            hoja_tarifario[f'E{fila_tarifario}'] = valor_total
                         encontrado = True
-                        primeras_iteraciones = False
                         break
-                if not encontrado and primeras_iteraciones:
+
+                if not encontrado and total_iteraciones == 1:
                     hoja_tarifario[f'E{fila_tarifario}'] = "No encontrado"
 
-    return resultados
+    return True
 
 def ejecutar_tarificador(tipo_vehiculo, tipo_carga, unidad_transporte, archivo_tarifario, maestros, horas_logisticas):
     ruta_maestro = maestros.get(tipo_vehiculo)
@@ -128,7 +122,15 @@ def ejecutar_tarificador(tipo_vehiculo, tipo_carga, unidad_transporte, archivo_t
     hoja_ubicaciones = libro_ubicaciones.active
 
     datos_tarifario = leer_tarifario(hoja_tarifario)
-    buscar_en_maestro_con_ubicaciones(hoja_maestro, hoja_ubicaciones, datos_tarifario, tipo_carga, unidad_transporte, horas_logisticas, hoja_tarifario)
+    buscar_en_maestro_con_ubicaciones(
+        hoja_maestro,
+        hoja_ubicaciones,
+        datos_tarifario,
+        tipo_carga,
+        unidad_transporte,
+        horas_logisticas,
+        hoja_tarifario
+    )
 
     hoja_tarifario['B2'] = f"VEHICULO: {tipo_vehiculo}"
     hoja_tarifario['E2'] = f"HORAS LOGISTICAS: {horas_logisticas}"
