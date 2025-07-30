@@ -4,8 +4,15 @@ import tempfile
 import os
 import pandas as pd
 import base64
+import psutil
 
 st.title("Tarificador")
+
+process = psutil.Process(os.getpid())
+mem = process.memory_info().rss / (1024 ** 2)  # Convertir de bytes a MB
+
+st.sidebar.markdown("### 💾 Uso de memoria")
+st.sidebar.metric(label="RAM usada", value=f"{mem:.2f} MB", delta=None)
 
 # Diccionarios
 maestros = {
@@ -90,7 +97,7 @@ if st.button("Ejecutar Tarificador"):
             b3 = str(df.iloc[2, 1]).strip().lower()
             c3 = str(df.iloc[2, 2]).strip().lower()
 
-            errores = []
+            errores = [] 
             if b3 != "origen":
                 errores.append("celda B3 debe decir 'origen'")
             if c3 != "destino":
@@ -103,7 +110,7 @@ if st.button("Ejecutar Tarificador"):
                     archivo.seek(0)
                     tmp.write(archivo.read())
                     tmp_path = tmp.name
-
+            
                 with st.spinner("⏳ Generando tarifas, por favor espera..."):
                     resultados = ejecutar_tarificador(tipo_vehiculo, tipo_carga, unidad_transporte, tmp_path, maestros, horas_logisticas)
 
