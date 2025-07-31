@@ -64,6 +64,8 @@ def obtener_candidatos(hoja_ubicaciones, texto):
 
     def buscar_general():
         municipio_bus = texto_norm
+        if municipio_bus == "bogota":
+            municipio_bus = "bogota dc"
         for fila in range(2, hoja_ubicaciones.max_row + 1):
             municipio = normalize_text(str(hoja_ubicaciones[f'D{fila}'].value))
             if municipio_bus == municipio:
