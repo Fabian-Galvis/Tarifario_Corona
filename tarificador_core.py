@@ -128,8 +128,15 @@ def obtener_candidatos(hoja_ubicaciones, texto):
 
 # Búsqueda y actualización
 def buscar_en_maestro_con_ubicaciones(hoja_tarifario, hoja_maestro, hoja_ubicaciones, datos, tipo_carga, unidad_transporte, horas_logisticas):
-    tipo_carga = int(tipo_carga)
-    horas_logisticas = int(horas_logisticas)
+    try:
+        tipo_carga = int(tipo_carga)
+    except ValueError:
+        raise ValueError("El tipo de carga debe ser un número entero (mes).")
+
+    try:
+        horas_logisticas = int(horas_logisticas)
+    except ValueError:
+        raise ValueError("Las horas logísticas deben ser un número.")
     offset = 0
 
     filas_validas_maestro = []
