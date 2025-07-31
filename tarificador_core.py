@@ -1,8 +1,7 @@
-# tarificador_core.py
-
 import openpyxl
 import unicodedata
 import re
+import os
 
 # Normalizar texto
 def normalize_text(texto):
@@ -128,7 +127,7 @@ def obtener_candidatos(hoja_ubicaciones, texto):
     return buscar_general()
 
 # Búsqueda y actualización
-def buscar_y_actualizar(hoja_tarifario, hoja_maestro, hoja_ubicaciones, datos, tipo_carga, unidad_transporte, horas_logisticas):
+def buscar_en_maestro_con_ubicaciones(hoja_tarifario, hoja_maestro, hoja_ubicaciones, datos, tipo_carga, unidad_transporte, horas_logisticas):
     tipo_carga = int(tipo_carga)
     horas_logisticas = int(horas_logisticas)
     offset = 0
@@ -199,3 +198,41 @@ def buscar_y_actualizar(hoja_tarifario, hoja_maestro, hoja_ubicaciones, datos, t
                         hoja_tarifario[f'C{fila_tarifario + 1}'] = texto_destino
                         hoja_tarifario[f'E{fila_tarifario + 1}'] = "No encontrado"
                         offset += 1
+                    
+                    encontrado = True
+                    break
+
+            if not encontrado and primera:
+                hoja_tarifario[f'E{fila_tarifario}'] = "No encontrado"
+
+def ejecutar_tarificador(tipo_vehiculo, tipo_carga, unidad_transporte, archivo_tarifario, maestros, horas_logisticas):
+    ruta_maestro = maestros.get(tipo_vehiculo)
+    if not ruta_maestro or not os.path.exists(ruta_maestro):
+        raise FileNotFoundError("Tipo de vehículo no válido o archivo no encontrado.")
+
+    if not archivo_tarifario.lower().endswith(".xlsx"):
+        raise ValueError("El archivo del tarifario debe ser un .xlsx")
+
+    libro_tarifario = openpyxl.load_workbook(archivo_tarifario)
+    hoja_tarifario = libro_tarifario.active
+    libro_maestro = openpyxl.load_workbook(ruta_maestro)
+    hoja_maestro = libro_maestro.active
+    libro_ubicaciones = openpyxl.load_workbook("Maestro_ubicaciones.xlsx")
+    hoja_ubicaciones = libro_ubicaciones.active
+
+    datos_tarifario = leer_tarifario(hoja_tarifario)
+    buscar_en_maestro_con_ubicaciones(
+        hoja_maestro,
+        hoja_ubicaciones,
+        datos_tarifario,
+        tipo_carga,
+        unidad_transporte,
+        horas_logisticas,
+        hoja_tarifario
+    )
+
+    hoja_tarifario['B2'] = f"VEHICULO: {tipo_vehiculo}"
+    hoja_tarifario['E2'] = f"HORAS LOGISTICAS: {horas_logisticas}"
+
+    libro_tarifario.save(archivo_tarifario)
+    return True
