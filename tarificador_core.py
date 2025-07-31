@@ -229,13 +229,13 @@ def ejecutar_tarificador(tipo_vehiculo, tipo_carga, unidad_transporte, archivo_t
 
     datos_tarifario = leer_tarifario(hoja_tarifario)
     buscar_en_maestro_con_ubicaciones(
+        hoja_tarifario,
         hoja_maestro,
         hoja_ubicaciones,
         datos_tarifario,
         tipo_carga,
         unidad_transporte,
         horas_logisticas,
-        hoja_tarifario
     )
 
     hoja_tarifario['B2'] = f"VEHICULO: {tipo_vehiculo}"
