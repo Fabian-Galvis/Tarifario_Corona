@@ -34,6 +34,7 @@ def leer_tarifario(hoja_tarifario):
 def obtener_candidatos(hoja_ubicaciones, texto):
     texto_norm = normalize_text(texto)
     palabras = texto_norm.split()
+    # Diccionario de departamentos y códigos Divipola
     departamentos_codigos = {
         "amazonas": ["91"], "antioquia": ["5"], "arauca": ["81"], "atlantico": ["8"],
         "bogota": ["11"], "bolivar": ["13"], "boyaca": ["15"], "caldas": ["17"],
@@ -45,88 +46,144 @@ def obtener_candidatos(hoja_ubicaciones, texto):
         "vaupes": ["97"], "vichada": ["99"], "valle": ["76"], "norte": ["54"]
     }
     municipios_con_departamento_en_nombre = {
-        "san jacinto del cauca", "puerto santander", "san juan del cesar", "santander de quilichao",
-        "risaralda", "cordoba", "nariño", "sucre", "bolivar", "caldas"
+        "san jacinto del cauca",
+        "puerto santander",
+        "san juan del cesar",
+        "santander de quilichao",
+        "risaralda",
+        "cordoba",
+        "nariño",
+        "sucre",
+        "bolivar",
+        "caldas"
     }
 
-    candidatos = []
-
-    def detectar_municipio_en_texto(t):
+    def detectar_municipio_en_texto(t, municipios_con_departamento_en_nombre):
+        palabras = t.split()  # Divide en palabras
         municipios_ordenados = sorted(
             municipios_con_departamento_en_nombre, 
             key=lambda m: len(m.split()), 
             reverse=True
         )
         for municipio in municipios_ordenados:
-            if t.startswith(municipio):
-                return municipio
+            num_palabras_mun = len(municipio.split())
+            if len(palabras) >= num_palabras_mun:
+                texto_a_comparar = " ".join(palabras[:num_palabras_mun])
+                if texto_a_comparar == municipio:
+                    return municipio
         return None
-
-    def buscar_general():
+    def municipio_sin_dep():
         municipio_bus = texto_norm
-        if municipio_bus == "bogota":
-            municipio_bus = "bogota dc"
         for fila in range(2, hoja_ubicaciones.max_row + 1):
             municipio = normalize_text(str(hoja_ubicaciones[f'D{fila}'].value))
             if municipio_bus == municipio:
                 depto = hoja_ubicaciones[f'B{fila}'].value
                 cod_divipola = str(hoja_ubicaciones[f'C{fila}'].value) + "000"
                 candidatos.append((fila, cod_divipola, depto, municipio))
+        print("Búsqueda por municipio directo:", candidatos)
         return candidatos
+# Normalizar nombres de departamento
+    a = detectar_municipio_en_texto(texto_norm, municipios_con_departamento_en_nombre)
+    candidatos = []
 
-    a = detectar_municipio_en_texto(texto_norm)
     if a:
         texto_restante = texto_norm[len(a):].strip()
         palabras_restantes = texto_restante.split()
         departamento_detectado = None
+
         for palabra in palabras_restantes:
-            if palabra in departamentos_codigos:
-                departamento_detectado = palabra
-                break
+            if palabra.lower() in departamentos_codigos:
+                departamento_detectado = palabra.lower()
+                break  # Nos quedamos con el primer departamento válido encontrado
 
         if not departamento_detectado:
-            return buscar_general()
+            print(f"Municipio '{a}' detectado pero sin departamento válido después. Se omite.")
+            return municipio_sin_dep()
 
         codigos_depto = departamentos_codigos[departamento_detectado]
-        municipio_busqueda = normalize_text(a)
+        municipio_busqueda = normalize_text(a)  # ya detectado
+        
         for fila in range(2, hoja_ubicaciones.max_row + 1):
             cod_depto = str(hoja_ubicaciones[f'A{fila}'].value)
-            municipio = normalize_text(str(hoja_ubicaciones[f'D{fila}'].value))
-            if cod_depto in codigos_depto and municipio == municipio_busqueda:
-                depto = hoja_ubicaciones[f'B{fila}'].value
-                cod_divipola = str(hoja_ubicaciones[f'C{fila}'].value) + "000"
-                candidatos.append((fila, cod_divipola, depto, municipio))
-        return candidatos
-
-    if len(palabras) == 1:
-        return buscar_general()
-
-    codigo_departamento = None
-    for i in range(1, len(palabras)):
-        palabra = palabras[i]
-        if palabra in departamentos_codigos:
-            if palabra == "santander" and i >= 2 and palabras[i-2] == "norte" and palabras[i-1] == "de":
-                codigo_departamento = ["54"]
-            elif palabra == "caldas" and i >= 2 and palabras[i-2] == "valle" and palabras[i-1] == "del":
-                codigo_departamento = ["76"]
-            else:
-                codigo_departamento = departamentos_codigos[palabra]
-            break
-
-    if codigo_departamento:
-        for fila in range(2, hoja_ubicaciones.max_row + 1):
-            cod_depto = str(hoja_ubicaciones[f'A{fila}'].value)
-            if cod_depto in codigo_departamento:
-                d = normalize_text(str(hoja_ubicaciones[f'B{fila}'].value))
-                municipio_busqueda = texto_norm.replace(d, "").strip()
+            if cod_depto in codigos_depto:
                 municipio = normalize_text(str(hoja_ubicaciones[f'D{fila}'].value))
                 if municipio_busqueda == municipio:
                     depto = hoja_ubicaciones[f'B{fila}'].value
                     cod_divipola = str(hoja_ubicaciones[f'C{fila}'].value) + "000"
                     candidatos.append((fila, cod_divipola, depto, municipio))
-        return candidatos
 
-    return buscar_general()
+                    print("Búsqueda por municipio PROBLEMATICO con departamento detectado:", candidatos)
+                    return candidatos
+
+    # Si el texto incluye un municipio de los problemáticos, no hagas búsqueda por departamento
+    elif len(palabras) == 1:
+        municipio_busqueda = texto_norm
+        if municipio_busqueda == "bogota":
+            municipio_busqueda = "bogota dc"  # Normalizar Bogotá DC
+        for fila in range(2, hoja_ubicaciones.max_row + 1):
+            municipio = normalize_text(str(hoja_ubicaciones[f'D{fila}'].value))
+            if municipio_busqueda == municipio:
+                depto = hoja_ubicaciones[f'B{fila}'].value
+                cod_divipola = str(hoja_ubicaciones[f'C{fila}'].value) + "000"
+                candidatos.append((fila, cod_divipola, depto, municipio))
+        print("Búsqueda por municipio directo:", candidatos)
+        return candidatos
+    else:
+        # Si hay más de una palabra, buscar departamento desde la segunda palabra en adelante
+        codigo_departamento = None
+        for i in range(1, len(palabras)):
+            palabra = palabras[i]
+            if palabra in departamentos_codigos:
+                if palabra == "bogota":
+                    print("Encontrado Bogotá DC")
+                    if i + 1 < len(palabras) and palabras[i + 1] in ["dc", "d", "d.c."]:
+                        codigo_departamento = departamentos_codigos[palabra]
+                        break
+                elif palabra == "caldas":
+                    if i >= 2 and palabras[i - 2] == "valle" and palabras[i - 1] == "del":
+                        codigo_departamento = ["76"]  # Valle del Cauca
+                    else:
+                        codigo_departamento = ["17"]  # Caldas
+                    break
+
+                elif palabra == "santander":
+                    if i >= 2 and palabras[i - 2] == "norte" and palabras[i - 1] == "de":
+                        codigo_departamento = ["54"]  # Norte de Santander
+                    else:
+                        codigo_departamento = ["68"]  # Santander
+                    break
+                else:
+                    codigo_departamento = departamentos_codigos[palabra]
+                    break
+        print("Código departamento encontrado:", codigo_departamento)
+        # Si encontró un departamento, buscar municipios solo en ese departamento
+        if "11" in codigo_departamento:
+            municipio = hoja_ubicaciones[f'D{150}'].value
+            depto = hoja_ubicaciones[f'B{150}'].value
+            cod_divipola = str(hoja_ubicaciones[f'C{150}'].value) + "000"
+            candidatos.append((150, cod_divipola, depto, municipio))
+            print("Bogota DC encontrado:", candidatos)
+            return candidatos
+        elif codigo_departamento:
+            for fila in range(2, hoja_ubicaciones.max_row + 1):
+                cod_depto = str(hoja_ubicaciones[f'A{fila}'].value)
+                if cod_depto in codigo_departamento:
+                    d = normalize_text(str(hoja_ubicaciones[f'B{fila}'].value))
+                    municipio_busqueda = texto_norm.replace(d, "").strip()
+                    municipio = normalize_text(hoja_ubicaciones[f'D{fila}'].value)
+                    if municipio_busqueda == municipio:
+                        municipio = hoja_ubicaciones[f'D{fila}'].value
+                        depto = hoja_ubicaciones[f'B{fila}'].value
+                        cod_divipola = str(hoja_ubicaciones[f'C{fila}'].value) + "000"
+                        candidatos.append((fila, cod_divipola, depto, municipio))
+            print("Búsqueda por departamento:", candidatos)
+            return candidatos
+        else: 
+            # Si no encontró departamento, buscar como municipio en todo
+            municipio_sin_dep()
+
+    print("Búsqueda general por municipio (sin depto):", candidatos)
+    return candidatos
 
 # Búsqueda y actualización
 def buscar_en_maestro_con_ubicaciones(hoja_tarifario, hoja_maestro, hoja_ubicaciones, datos, tipo_carga, unidad_transporte, horas_logisticas):
